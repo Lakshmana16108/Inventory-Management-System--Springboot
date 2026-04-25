@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f0f2f5;
+            color: #333;
+        }
+
+        header {
+            background: #1a237e;
+            color: white;
+            padding: 18px 30px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .container {
+            display: flex;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* Sidebar - original menu */
+        .sidebar {
+            width: 230px;
+            background: #283593;
+            padding: 20px 0;
+            flex-shrink: 0;
+        }
+
+        .sidebar button {
+            display: block;
+            width: 100%;
+            padding: 14px 22px;
+            background: none;
+            border: none;
+            color: #c5cae9;
+            text-align: left;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar button:hover,
+        .sidebar button.active {
+            background: #1a237e;
+            color: #fff;
+            border-left: 3px solid #ffeb3b;
+        }
+
+        .sidebar .menu-label {
+            color: #7986cb;
+            font-size: 0.75rem;
+            padding: 16px 22px 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            padding: 30px;
+        }
+
+        .panel {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            padding: 28px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            max-width: 700px;
+        }
+
+        .panel.active { display: block; }
+
+        .panel h2 {
+            font-size: 1.2rem;
+            color: #1a237e;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e8eaf6;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.88rem;
+            color: #555;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #c5cae9;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #3949ab;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            background: #3949ab;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 6px;
+        }
+
+        .btn:hover { background: #283593; }
+        .btn-danger { background: #e53935; }
+        .btn-danger:hover { background: #b71c1c; }
+        .btn-success { background: #2e7d32; }
+        .btn-success:hover { background: #1b5e20; }
+
+        /* Message box */
+        .msg {
+            margin-top: 16px;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.92rem;
+            display: none;
+        }
+        .msg.success { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; display: block; }
+        .msg.error   { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; display: block; }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #e8eaf6;
+            color: #283593;
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tr:hover td { background: #f5f5f5; }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-low  { background: #ffebee; color: #c62828; }
+        .badge-ok   { background: #e8f5e9; color: #2e7d32; }
+
+        .empty-msg {
+            text-align: center;
+            color: #9e9e9e;
+            padding: 30px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<header>📦 INVENTORY MANAGEMENT SYSTEM</header>
+
+<div class="container">
+
+    <!-- Sidebar = original menu options 1-7 -->
+    <div class="sidebar">
+        <div class="menu-label">Menu</div>
+        <button class="active" onclick="show('addSupplier', this)">1. Add Supplier</button>
+        <button onclick="show('addProduct', this)">2. Add Product</button>
+        <button onclick="show('displayProducts', this); loadProducts()">3. Display Products</button>
+        <button onclick="show('recordSale', this)">4. Record Sale</button>
+        <button onclick="show('lowStock', this); loadLowStock()">5. Show Low Stock</button>
+        <button onclick="show('updateStock', this)">6. Update Stock</button>
+        <div class="menu-label" style="margin-top:20px">Sales</div>
+        <button onclick="show('viewSales', this); loadSales()">View All Sales</button>
+    </div>
+
+    <div class="main">
+
+        <!-- 1. Add Supplier -->
+        <div id="addSupplier" class="panel active">
+            <h2>1. Add Supplier</h2>
+            <div class="form-group">
+                <label>Supplier ID</label>
+                <input type="number" id="s_sid" placeholder="Enter Supplier ID">
+            </div>
+            <div class="form-group">
+                <label>Supplier Name</label>
+                <input type="text" id="s_name" placeholder="Enter Supplier Name">
+            </div>
+            <div class="form-group">
+                <label>Phone</label>
+                <input type="text" id="s_phone" placeholder="Enter Phone Number">
+            </div>
+            <button class="btn" onclick="addSupplier()">Add Supplier</button>
+            <div id="msg_addSupplier" class="msg"></div>
+        </div>
+
+        <!-- 2. Add Product -->
+        <div id="addProduct" class="panel">
+            <h2>2. Add Product</h2>
+            <div class="form-group">
+                <label>Product ID</label>
+                <input type="number" id="p_id" placeholder="Enter Product ID">
+            </div>
+            <div class="form-group">
+                <label>Product Name</label>
+                <input type="text" id="p_name" placeholder="Enter Product Name">
+            </div>
+            <div class="form-group">
+                <label>Price</label>
+                <input type="number" step="0.01" id="p_price" placeholder="Enter Price">
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="p_qty" placeholder="Enter Quantity">
+            </div>
+            <div class="form-group">
+                <label>Supplier ID</label>
+                <input type="number" id="p_sid" placeholder="Enter Supplier ID">
+            </div>
+            <button class="btn btn-success" onclick="addProduct()">Add Product</button>
+            <div id="msg_addProduct" class="msg"></div>
+        </div>
+
+        <!-- 3. Display Products -->
+        <div id="displayProducts" class="panel">
+            <h2>3. Display Products</h2>
+            <button class="btn" onclick="loadProducts()" style="margin-bottom:10px">🔄 Refresh</button>
+            <div id="productTable"></div>
+        </div>
+
+        <!-- 4. Record Sale -->
+        <div id="recordSale" class="panel">
+            <h2>4. Record Sale</h2>
+            <div class="form-group">
+                <label>Sale ID</label>
+                <input type="number" id="sl_id" placeholder="Enter Sale ID">
+            </div>
+            <div class="form-group">
+                <label>Product ID</label>
+                <input type="number" id="sl_pid" placeholder="Enter Product ID">
+            </div>
+            <div class="form-group">
+                <label>Quantity</label>
+                <input type="number" id="sl_qty" placeholder="Enter Quantity to Sell">
+            </div>
+            <button class="btn btn-danger" onclick="recordSale()">Record Sale</button>
+            <div id="msg_recordSale" class="msg"></div>
+        </div>
+
+        <!-- 5. Show Low Stock -->
+        <div id="lowStock" class="panel">
+            <h2>5. Show Low Stock <small style="color:#9e9e9e;font-size:0.8rem">(Quantity &lt; 5)</small></h2>
+            <button class="btn" onclick="loadLowStock()" style="margin-bottom:10px">🔄 Refresh</button>
+            <div id="lowStockTable"></div>
+        </div>
+
+        <!-- 6. Update Stock -->
+        <div id="updateStock" class="panel">
+            <h2>6. Update Stock</h2>
+            <div class="form-group">
+                <label>Product ID</label>
+                <input type="number" id="us_pid" placeholder="Enter Product ID">
+            </div>
+            <div class="form-group">
+                <label>New Quantity</label>
+                <input type="number" id="us_qty" placeholder="Enter New Quantity">
+            </div>
+            <button class="btn" onclick="updateStock()">Update Stock</button>
+            <div id="msg_updateStock" class="msg"></div>
+        </div>
+
+        <!-- View All Sales -->
+        <div id="viewSales" class="panel">
+            <h2>All Sales Records</h2>
+            <button class="btn" onclick="loadSales()" style="margin-bottom:10px">🔄 Refresh</button>
+            <div id="salesTable"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    const BASE = 'http://localhost:8080/api';
+
+    function show(id, btn) {
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.sidebar button').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function showMsg(id, text, type) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        el.className = 'msg ' + type;
+        setTimeout(() => { el.className = 'msg'; el.textContent = ''; }, 4000);
+    }
+
+    function productTable(products) {
+        if (!products.length) return '<div class="empty-msg">No products found.</div>';
+        return `<table>
+            <thead><tr><th>ID</th><th>Name</th><th>Price (₹)</th><th>Quantity</th><th>Supplier ID</th><th>Stock</th></tr></thead>
+            <tbody>${products.map(p => `
+            <tr>
+                <td>${p.id}</td>
+                <td>${p.name}</td>
+                <td>${p.price.toFixed(2)}</td>
+                <td>${p.quantity}</td>
+                <td>${p.supplierId}</td>
+                <td><span class="badge ${p.quantity < 5 ? 'badge-low' : 'badge-ok'}">${p.quantity < 5 ? 'LOW' : 'OK'}</span></td>
+            </tr>`).join('')}
+            </tbody></table>`;
+    }
+
+    // 1. Add Supplier
+    async function addSupplier() {
+        const sid   = document.getElementById('s_sid').value;
+        const name  = document.getElementById('s_name').value.trim();
+        const phone = document.getElementById('s_phone').value.trim();
+
+        if (!sid || !name || !phone) { showMsg('msg_addSupplier', 'Please fill all fields.', 'error'); return; }
+
+        try {
+            const res = await fetch(`${BASE}/suppliers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ supplierId: parseInt(sid), name, phone })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showMsg('msg_addSupplier', `Supplier added! ID: ${data.supplierId}, Name: ${data.name}`, 'success');
+                document.getElementById('s_sid').value = '';
+                document.getElementById('s_name').value = '';
+                document.getElementById('s_phone').value = '';
+            } else {
+                showMsg('msg_addSupplier', data.message || 'Error adding supplier.', 'error');
+            }
+        } catch (e) {
+            showMsg('msg_addSupplier', 'Cannot connect to server.', 'error');
+        }
+    }
+
+    // 2. Add Product
+    async function addProduct() {
+        const id    = document.getElementById('p_id').value;
+        const name  = document.getElementById('p_name').value.trim();
+        const price = document.getElementById('p_price').value;
+        const qty   = document.getElementById('p_qty').value;
+        const sid   = document.getElementById('p_sid').value;
+
+        if (!id || !name || !price || !qty || !sid) { showMsg('msg_addProduct', 'Please fill all fields.', 'error'); return; }
+
+        try {
+            const res = await fetch(`${BASE}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: parseInt(id), name,
+                    price: parseFloat(price),
+                    quantity: parseInt(qty),
+                    supplierId: parseInt(sid)
+                })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showMsg('msg_addProduct', `Product added! ID: ${data.id}, Name: ${data.name}`, 'success');
+                ['p_id','p_name','p_price','p_qty','p_sid'].forEach(f => document.getElementById(f).value = '');
+            } else {
+                showMsg('msg_addProduct', data.message || 'Error adding product.', 'error');
+            }
+        } catch (e) {
+            showMsg('msg_addProduct', 'Cannot connect to server.', 'error');
+        }
+    }
+
+    // 3. Display Products
+    async function loadProducts() {
+        try {
+            const res = await fetch(`${BASE}/products`);
+            const data = await res.json();
+            document.getElementById('productTable').innerHTML = productTable(data);
+        } catch (e) {
+            document.getElementById('productTable').innerHTML = '<div class="empty-msg">Cannot connect to server.</div>';
+        }
+    }
+
+    // 4. Record Sale
+    async function recordSale() {
+        const saleId    = document.getElementById('sl_id').value;
+        const productId = document.getElementById('sl_pid').value;
+        const qty       = document.getElementById('sl_qty').value;
+
+        if (!saleId || !productId || !qty) { showMsg('msg_recordSale', 'Please fill all fields.', 'error'); return; }
+
+        try {
+            const res = await fetch(`${BASE}/sales?saleId=${saleId}&productId=${productId}&qty=${qty}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showMsg('msg_recordSale', `Sale Done! Sale ID: ${data.saleId} | Total: ₹${data.total.toFixed(2)}`, 'success');
+                ['sl_id','sl_pid','sl_qty'].forEach(f => document.getElementById(f).value = '');
+            } else {
+                showMsg('msg_recordSale', data.message || 'Not enough stock!', 'error');
+            }
+        } catch (e) {
+            showMsg('msg_recordSale', 'Cannot connect to server.', 'error');
+        }
+    }
+
+    // 5. Show Low Stock
+    async function loadLowStock() {
+        try {
+            const res  = await fetch(`${BASE}/products/low-stock`);
+            const data = await res.json();
+            if (!data.length) {
+                document.getElementById('lowStockTable').innerHTML =
+                    '<div class="empty-msg">===== No Low Stock Products Available =====</div>';
+            } else {
+                document.getElementById('lowStockTable').innerHTML = productTable(data);
+            }
+        } catch (e) {
+            document.getElementById('lowStockTable').innerHTML = '<div class="empty-msg">Cannot connect to server.</div>';
+        }
+    }
+
+    // 6. Update Stock
+    async function updateStock() {
+        const pid    = document.getElementById('us_pid').value;
+        const newQty = document.getElementById('us_qty').value;
+
+        if (!pid || newQty === '') { showMsg('msg_updateStock', 'Please fill all fields.', 'error'); return; }
+
+        try {
+            const res = await fetch(`${BASE}/products/${pid}/stock?newQty=${newQty}`, { method: 'PUT' });
+            const data = await res.json();
+            if (res.ok) {
+                showMsg('msg_updateStock', `Stock updated successfully! Product: ${data.name} | New Qty: ${data.quantity}`, 'success');
+                document.getElementById('us_pid').value = '';
+                document.getElementById('us_qty').value = '';
+            } else {
+                showMsg('msg_updateStock', data.message || 'Error updating stock.', 'error');
+            }
+        } catch (e) {
+            showMsg('msg_updateStock', 'Cannot connect to server.', 'error');
+        }
+    }
+
+    // View All Sales
+    async function loadSales() {
+        try {
+            const res  = await fetch(`${BASE}/sales`);
+            const data = await res.json();
+            if (!data.length) {
+                document.getElementById('salesTable').innerHTML = '<div class="empty-msg">No sales records found.</div>';
+            } else {
+                document.getElementById('salesTable').innerHTML = `<table>
+                    <thead><tr><th>Sale ID</th><th>Product ID</th><th>Quantity</th><th>Total (₹)</th></tr></thead>
+                    <tbody>${data.map(s => `
+                    <tr>
+                        <td>${s.saleId}</td>
+                        <td>${s.productId}</td>
+                        <td>${s.qty}</td>
+                        <td>₹${s.total.toFixed(2)}</td>
+                    </tr>`).join('')}
+                    </tbody></table>`;
+            }
+        } catch (e) {
+            document.getElementById('salesTable').innerHTML = '<div class="empty-msg">Cannot connect to server.</div>';
+        }
+    }
+</script>
+</body>
+</html>
